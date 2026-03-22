@@ -35,9 +35,10 @@ const WrappedItem = ({ item, panX, panY, minX, maxX, minY, maxY, onProductClick 
         top: '50%',
         marginLeft: -160,
         marginTop: -220,
+        scale: item.scale, // apply deterministic random scale
         zIndex: 10
       }}
-      className="rounded-lg overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-shadow duration-300 hover:shadow-[0_10px_60px_rgba(255,255,255,0.2)] group cursor-pointer"
+      className="rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] group cursor-pointer"
       onPointerDown={(e) => {
         // Prevent click events firing immediately upon dragging
         e.stopPropagation();
@@ -46,7 +47,7 @@ const WrappedItem = ({ item, panX, panY, minX, maxX, minY, maxY, onProductClick 
         // Stop the click from registering if the user was actively panning
         onProductClick(item);
       }}
-      whileHover={{ scale: 1.05, zIndex: 100 }}
+      whileHover={{ scale: item.scale * 1.15, zIndex: 100 }}
     >
       <img 
         src={item.images && item.images.length > 0 ? item.images[0] : '/placeholder.jpg'} 
@@ -80,13 +81,13 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
     if (products.length === 0) return { items: [], minX: 0, maxX: 0, minY: 0, maxY: 0 };
     
     // We generate a massive staggered block that flawlessly wraps on itself.
-    // 14 columns x 10 rows safely covers incredibly ultra-wide monitors.
-    const cols = 14; 
-    const rows = 10;
-    const cellWidth = 360; 
-    const cellHeight = 480; 
-    const blockWidth = cols * cellWidth; // 5040px loop margin
-    const blockHeight = rows * cellHeight; // 4800px loop margin
+    // 10 columns x 8 rows safely covers ultra-wide monitors since cells are enormous.
+    const cols = 10; 
+    const rows = 8;
+    const cellWidth = 800;  // Dramatically increased spacing
+    const cellHeight = 900; // Dramatically increased spacing
+    const blockWidth = cols * cellWidth; // 8000px loop margin
+    const blockHeight = rows * cellHeight; // 7200px loop margin
     const minX = -blockWidth / 2;
     const maxX = blockWidth / 2;
     const minY = -blockHeight / 2;
@@ -104,20 +105,24 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
         // Stagger every other row by exactly half a cell for zero-overlap dense packing
         const staggerX = (row % 2 === 0) ? 0 : cellWidth / 2;
         
-        // Add tiny deterministic jitter (under 30px) to make the grid feel pleasantly organic,
-        // without ANY risk of overlapping because the cell gaps are safely larger than the jitter.
+        // Add extreme deterministic jitter to make the grid feel wildly scattered
+        // Max jitter is ~250px, cell gap is ~400px - mathematically impossible to overlap!
         const random = mulberry32(row * 100 + col);
-        const jitterX = (random() - 0.5) * 40;
-        const jitterY = (random() - 0.5) * 40;
+        const jitterX = (random() - 0.5) * 400;
+        const jitterY = (random() - 0.5) * 450;
 
         const initialX = minX + col * cellWidth + staggerX + jitterX;
         const initialY = minY + row * cellHeight + jitterY;
         
+        // Create massive scale variety between 0.3x and 1.1x like the reference image
+        const scale = 0.3 + (mulberry32(row * 200 + col)() * 0.8);
+
         newItems.push({
            ...product,
            uniqueId: `grid-${row}-${col}`,
            initialX,
-           initialY
+           initialY,
+           scale
         });
       }
     }
