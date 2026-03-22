@@ -46,22 +46,18 @@ export default function ProductSidePanel({ product, onClose }: ProductSidePanelP
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: '-100%', opacity: 0 }}
       transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="fixed top-0 left-0 w-full md:w-[450px] h-full bg-[#0a0a0a]/80 backdrop-blur-2xl border-r border-white/10 z-[100] shadow-2xl flex flex-col overflow-y-auto"
+      className="fixed top-0 left-0 w-full md:w-[50vw] h-full z-[100] shadow-[30px_0_60px_rgba(0,0,0,0.8)]"
     >
-      <div className="relative h-[55vh] flex-shrink-0 group">
-        <img 
-          src={product.images[0]} 
-          alt={product.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent opacity-80" />
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
-        >
-          <X size={20} />
-        </button>
-      </div>
+      {/* Scrollable Content Container */}
+      <div className="w-full h-full bg-[#050505] border-r border-white/10 flex flex-col overflow-y-auto relative">
+        <div className="relative h-[55vh] flex-shrink-0 group">
+          <img 
+            src={product.images[0]} 
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-80" />
+        </div>
       
       <div className="p-8 flex-grow flex flex-col -mt-20 relative z-10">
         <div className="uppercase tracking-[0.2em] text-[10px] text-white/40 mb-3">{product.brand?.name || 'Iris'}</div>
@@ -87,7 +83,17 @@ export default function ProductSidePanel({ product, onClose }: ProductSidePanelP
             <Eye size={16} /> {loading ? 'Registering...' : 'Show Interest'}
           </button>
         </div>
+        </div>
       </div>
+
+      {/* Floating Edge Close Button exactly bridging the gap */}
+      <button 
+        onClick={onClose}
+        className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-[#111] border border-white/20 text-white/70 flex items-center justify-center hover:bg-white hover:text-black transition-colors rounded-sm z-[200] shadow-xl"
+        aria-label="Close panel"
+      >
+        <X size={20} strokeWidth={1.5} />
+      </button>
     </motion.div>
   );
 }
