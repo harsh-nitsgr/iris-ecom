@@ -28,6 +28,7 @@ function ProductsContent() {
   // Selected product state for the Side Panel (deep linked via URL)
   const productIdQuery = searchParams.get('product');
   const selectedProduct = productIdQuery ? allProducts.find(p => p._id === productIdQuery) : null;
+  const clickedId = searchParams.get('clickedId');
 
   useEffect(() => {
     if (selectedCategory === 'All') {
@@ -46,15 +47,22 @@ function ProductsContent() {
     if (viewType === 'experience') {
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.set('product', product._id);
+      
+      // We pass the absolute uniqueId to explicitly link identical layoutIds for the Shared Element Transition
+      if (product._clickedUniqueId) {
+        newParams.set('clickedId', product._clickedUniqueId);
+      }
+      
       router.push(`${pathname}?${newParams.toString()}`);
     } else {
       router.push(`/product/${product._id}`);
     }
   };
 
-  const closeSidePanel = () => {
+  const handleClosePanel = () => {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete('product');
+    newParams.delete('clickedId'); // Also remove clickedId when closing
     router.push(`${pathname}?${newParams.toString()}`);
   };
 
@@ -63,7 +71,10 @@ function ProductsContent() {
     setViewType(newType);
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set('view', newType);
-    if (newType === 'grid') newParams.delete('product'); // Close side panel when leaving canvas
+    if (newType === 'grid') {
+      newParams.delete('product'); // Close side panel when leaving canvas
+      newParams.delete('clickedId'); // Also remove clickedId
+    }
     router.push(`${pathname}?${newParams.toString()}`);
   };
 
@@ -77,11 +88,13 @@ function ProductsContent() {
         onToggleView={toggleView}
       />
 
+      {/* Product Detail Panel Overlay */}
       <AnimatePresence>
-        {selectedProduct && viewType === 'experience' && (
+        {selectedProduct && (
           <ProductSidePanel 
             product={selectedProduct} 
-            onClose={closeSidePanel} 
+            clickedId={clickedId}
+            onClose={handleClosePanel} 
           />
         )}
       </AnimatePresence>
