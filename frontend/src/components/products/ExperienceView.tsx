@@ -34,18 +34,17 @@ const WrappedItem = ({ item, panX, panY, minX, maxX, minY, maxY, onProductClick 
         top: '50%',
         marginLeft: -160,
         marginTop: -220,
+        scale: item.scale, // apply deterministic random scale
         zIndex: 10
       }}
-      className="rounded-lg overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.5)] transition-shadow duration-300 hover:shadow-[0_10px_60px_rgba(255,255,255,0.2)] group cursor-pointer"
+      className="rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] group cursor-pointer"
       onPointerDown={(e) => {
-        // Prevent click events firing immediately upon dragging
         e.stopPropagation();
       }}
       onClick={(e) => {
-        // Stop the click from registering if the user was actively panning
         onProductClick(item);
       }}
-      whileHover={{ scale: 1.05, zIndex: 100 }}
+      whileHover={{ scale: item.scale * 1.15, zIndex: 100 }}
     >
       <img
         src={item.images && item.images.length > 0 ? item.images[0] : '/placeholder.jpg'}
@@ -67,6 +66,7 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
   const panY = useMotionValue(0);
   const globalScale = useMotionValue(1); // Drives the zoom in/out
   
+  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
 
@@ -142,14 +142,16 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
   if (windowSize.width === 0) return null;
 
   return (
-    <div
-      className="fixed inset-0 overflow-hidden bg-[#050505] cursor-grab active:cursor-grabbing touch-none z-0"
+    <div 
+      className="fixed top-20 inset-x-0 bottom-0 overflow-hidden bg-[#050505] cursor-grab active:cursor-grabbing touch-none z-0"
       ref={containerRef}
     >
       <motion.div
         drag
-        style={{
-          x: panX,
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setTimeout(() => setIsDragging(false), 150)}
+        style={{ 
+          x: panX, 
           y: panY,
           width: 50000,
           height: 50000,
@@ -179,6 +181,8 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
               minY={gridData.minY} 
               maxY={gridData.maxY} 
               onProductClick={(product: any) => {
+                if (isDragging) return; // Block accidental clicks if the user was just dragging
+
                 // When an item is clicked, pan the camera so the item smoothly moves to 
                 // the right side of the screen (75% mark), to elegantly pair with the 50% info panel!
                 const targetPanX = (window.innerWidth * 0.25) - item.initialX;
@@ -186,6 +190,7 @@ export default function ExperienceView({ products, onProductClick }: ExperienceV
                 
                 animate(panX, targetPanX, { type: 'spring', damping: 25, stiffness: 120 });
                 animate(panY, targetPanY, { type: 'spring', damping: 25, stiffness: 120 });
+                animate(globalScale, 1.5, { type: 'spring', damping: 25, stiffness: 120 }); // Zoom in to focus
                 
                 onProductClick(product);
               }} 
