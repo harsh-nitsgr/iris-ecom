@@ -1,224 +1,183 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, useMotionValue, useTransform, wrap, animate } from 'framer-motion';
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
-// Seeded random for consistent organic jitter
-const mulberry32 = (a: number) => {
-  return function () {
-    var t = a += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-}
+// ─────────────────────────────────────────────────────────────────────────────
+//  EASY TUNING KNOBS  (change these to adjust spacing / size)
+// ─────────────────────────────────────────────────────────────────────────────
+const CELL_W       = 500;   // ← horizontal gap between dress centres
+const CELL_H       = 600;   // ← vertical gap between dress centres
+const CARD_W       = 260;   // ← card pixel width
+const CARD_H       = 360;   // ← card pixel height
+const JITTER       = 80;    // ← max random offset (keeps spacing roughly constant)
+const BASE_SCALE   = 0.75;  // ← base display scale (0–1)
+const SCALE_RANGE  = 0.25;  // ← how much extra random scale variance
+const COLS         = 16;    // ← columns in the grid
+const ROWS         = 14;    // ← rows in the grid
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Deterministic seeded PRNG – same layout every render, no flickering
+const seeded = (seed: number) => {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+};
 
 interface ExperienceViewProps {
   products: any[];
   onProductClick: (product: any) => void;
 }
 
-const WrappedItem = ({ item, panX, panY, minX, maxX, minY, maxY, onProductClick }: any) => {
-  // Use framer-motion wrap to seamlessly loop coordinates infinitely relative to the dragged canvas
-  const x = useTransform(panX, (px) => wrap(minX, maxX, (px as number) + item.initialX) - (px as number));
-  const y = useTransform(panY, (py) => wrap(minY, maxY, (py as number) + item.initialY) - (py as number));
-
-  return (
-    <motion.div
-      style={{
-        x,
-        y,
-        width: 320,
-        height: 440,
-        position: 'absolute',
-        left: '50%',
-        top: '50%',
-        marginLeft: -160,
-        marginTop: -220,
-        scale: item.scale, // apply deterministic random scale
-        zIndex: 10
-      }}
-      className="rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.6)] transition-all duration-300 hover:shadow-[0_20px_60px_rgba(255,255,255,0.3)] group cursor-pointer"
-      onPointerDown={(e) => {
-        e.stopPropagation();
-      }}
-      onClick={(e) => {
-        onProductClick(item);
-      }}
-      whileHover={{ scale: item.scale * 1.15, zIndex: 100 }}
-    >
-      <img
-        src={item.images && item.images.length > 0 ? item.images[0] : '/placeholder.jpg'}
-        alt={item.name}
-        loading="lazy"
-        className="w-full h-full object-cover pointer-events-none"
-        draggable={false}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6 pointer-events-none">
-        <h3 className="text-white font-serif text-2xl tracking-wide">{item.name}</h3>
-        <p className="text-white/70 text-sm mt-2 font-light tracking-wider">₹{item.price.toLocaleString('en-IN')}</p>
-      </div>
-    </motion.div>
-  );
-}
-
 export default function ExperienceView({ products, onProductClick }: ExperienceViewProps) {
   const panX = useMotionValue(0);
   const panY = useMotionValue(0);
-  const globalScale = useMotionValue(1); // Drives the zoom in/out
-  
+  const scaleVal = useMotionValue(1);
+
   const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+  const [ready, setReady] = useState(false);
 
-  const handleZoomIn = () => animate(globalScale, Math.min(globalScale.get() + 0.3, 2), { type: 'spring' });
-  const handleZoomOut = () => animate(globalScale, Math.max(globalScale.get() - 0.3, 0.4), { type: 'spring' });
+  useEffect(() => { setReady(true); }, []);
 
-  useEffect(() => {
-    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const handleZoomIn  = () => animate(scaleVal, Math.min(scaleVal.get() + 0.25, 2.5),  { type: 'spring', stiffness: 200, damping: 25 });
+  const handleZoomOut = () => animate(scaleVal, Math.max(scaleVal.get() - 0.25, 0.3), { type: 'spring', stiffness: 200, damping: 25 });
 
-  const gridData = useMemo(() => {
-    if (products.length === 0) return { items: [], minX: 0, maxX: 0, minY: 0, maxY: 0 };
+  // Build a static grid of cards. Large enough that the user never pans to an edge.
+  const items = useMemo(() => {
+    if (products.length === 0) return [];
+    const prng = seeded(0xdeadbeef);
+    const list: any[] = [];
 
-    // We generate a massive staggered block that flawlessly wraps on itself.
-    // 14 columns x 10 rows safely covers incredibly ultra-wide monitors.
-    const cols = 14;
-    const rows = 10;
-    // --- YOU CAN ADJUST SPACING HERE ---
-    const cellWidth = 600;  // Horizontal Spacing between items
-    const cellHeight = 700; // Vertical Spacing between items
-    // -----------------------------------
-    
-    const blockWidth = cols * cellWidth; // 5040px loop margin
-    const blockHeight = rows * cellHeight; // 4800px loop margin
-    const minX = -blockWidth / 2;
-    const maxX = blockWidth / 2;
-    const minY = -blockHeight / 2;
-    const maxY = blockHeight / 2;
+    const totalW = COLS * CELL_W;
+    const totalH = ROWS * CELL_H;
+    const originX = -totalW / 2;
+    const originY = -totalH / 2;
 
-    const newItems = [];
-    let productIndex = 0;
+    let idx = 0;
+    for (let row = 0; row < ROWS; row++) {
+      for (let col = 0; col < COLS; col++) {
+        const product = products[idx % products.length];
+        idx++;
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        // Distribute the original items sequentially throughout the grid
-        const product = products[productIndex % products.length];
-        productIndex++;
+        const staggerX = (row % 2 === 0) ? 0 : CELL_W / 2;
+        const jx = (prng() - 0.5) * JITTER * 2;
+        const jy = (prng() - 0.5) * JITTER * 2;
+        const scale = BASE_SCALE + prng() * SCALE_RANGE;
 
-        // Stagger every other row by exactly half a cell for zero-overlap dense packing
-        const staggerX = (row % 2 === 0) ? 0 : cellWidth / 2;
-
-        // Scatter randomly but keep the space reasonably constant 
-        // by limiting the jitter to exactly half the gap between cells.
-        const random = mulberry32(row * 100 + col);
-        const jitterX = (random() - 0.5) * 150;
-        const jitterY = (random() - 0.5) * 150;
-
-        const initialX = minX + col * cellWidth + staggerX + jitterX;
-        const initialY = minY + row * cellHeight + jitterY;
-        
-        // --- YOU CAN ADJUST DRESS ITEM SIZE HERE ---
-        // I reduced the default base scale to 0.6x for smaller dresses
-        const baseScale = 0.6;
-        // -------------------------------------------
-        const scale = baseScale + (mulberry32(row * 200 + col)() * 0.2); // Tiny random variance
-
-        newItems.push({
+        list.push({
           ...product,
-          uniqueId: `grid-${row}-${col}`,
-          initialX,
-          initialY,
-          scale
+          uid: `${row}-${col}`,
+          x: originX + col * CELL_W + staggerX + jx,
+          y: originY + row * CELL_H + jy,
+          scale,
         });
       }
     }
-
-    return { items: newItems, minX, maxX, minY, maxY };
+    return list;
   }, [products]);
 
-  if (windowSize.width === 0) return null;
+  if (!ready) return null;
+
+  const totalW = COLS * CELL_W;
+  const totalH = ROWS * CELL_H;
+  const maxPan  = Math.max(totalW, totalH) / 2 + 400;
 
   return (
-    <div 
-      className="fixed top-20 inset-x-0 bottom-0 overflow-hidden bg-[#050505] cursor-grab active:cursor-grabbing touch-none z-0"
-      ref={containerRef}
-    >
+    <div className="fixed top-20 inset-x-0 bottom-0 overflow-hidden bg-[#050505] touch-none z-0"
+         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}>
+
+      {/* Draggable canvas */}
       <motion.div
         drag
         onDragStart={() => setIsDragging(true)}
-        onDragEnd={() => setTimeout(() => setIsDragging(false), 150)}
-        style={{ 
-          x: panX, 
-          y: panY,
-          width: 50000,
-          height: 50000,
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          marginLeft: -25000,
-          marginTop: -25000
+        onDragEnd={()   => setTimeout(() => setIsDragging(false), 120)}
+        dragConstraints={{ left: -maxPan, right: maxPan, top: -maxPan, bottom: maxPan }}
+        dragElastic={0.05}
+        dragTransition={{ power: 0.3, timeConstant: 200 }}
+        initial={{ scale: 0.75, opacity: 0 }}
+        animate={{ scale: 1,    opacity: 1 }}
+        transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+        className="absolute"
+        style={{
+          x: panX, y: panY, scale: scaleVal,
+          width: totalW, height: totalH,
+          left: '50%', top: '50%',
+          marginLeft: -totalW / 2,
+          marginTop:  -totalH / 2,
         }}
-        dragConstraints={{ left: -10000, right: 10000, top: -10000, bottom: 10000 }}
-        dragElastic={0.2}
-        dragTransition={{ bounceStiffness: 100, bounceDamping: 20 }}
-        initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-        className="z-0"
       >
-        <motion.div style={{ scale: globalScale }} className="absolute inset-0">
-          {gridData.items.map((item) => (
-            <WrappedItem 
-              key={item.uniqueId} 
-              item={item} 
-              panX={panX} 
-              panY={panY} 
-              minX={gridData.minX} 
-              maxX={gridData.maxX} 
-              minY={gridData.minY} 
-              maxY={gridData.maxY} 
-              onProductClick={(product: any) => {
-                if (isDragging) return; // Block accidental clicks if the user was just dragging
+        {items.map((item) => (
+          <motion.div
+            key={item.uid}
+            style={{
+              position: 'absolute',
+              left: item.x - CARD_W / 2,
+              top:  item.y - CARD_H / 2,
+              width:  CARD_W,
+              height: CARD_H,
+              scale: item.scale,
+            }}
+            className="rounded-xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.55)] cursor-pointer group"
+            whileHover={{ scale: item.scale * 1.08, zIndex: 50, transition: { duration: 0.2 } }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              if (isDragging) return;
 
-                // When an item is clicked, pan the camera so the item smoothly moves to 
-                // the right side of the screen (75% mark), to elegantly pair with the 50% info panel!
-                const targetPanX = (window.innerWidth * 0.25) - item.initialX;
-                const targetPanY = -item.initialY;
-                
-                animate(panX, targetPanX, { type: 'spring', damping: 25, stiffness: 120 });
-                animate(panY, targetPanY, { type: 'spring', damping: 25, stiffness: 120 });
-                animate(globalScale, 1.5, { type: 'spring', damping: 25, stiffness: 120 }); // Zoom in to focus
-                
-                onProductClick(product);
-              }} 
+              // Smoothly pan the clicked dress to the right-centre of screen
+              const targetX = window.innerWidth * 0.25 - item.x;
+              const targetY = -(item.y);
+              animate(panX, targetX, { type: 'spring', damping: 26, stiffness: 130 });
+              animate(panY, targetY, { type: 'spring', damping: 26, stiffness: 130 });
+              animate(scaleVal, 1.4,  { type: 'spring', damping: 26, stiffness: 130 });
+
+              onProductClick(item);
+            }}
+          >
+            <img
+              src={item.images?.[0] ?? '/placeholder.jpg'}
+              alt={item.name}
+              loading="lazy"
+              draggable={false}
+              className="w-full h-full object-cover object-top pointer-events-none"
             />
-          ))}
-        </motion.div>
+            {/* Hover label */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent
+                            opacity-0 group-hover:opacity-100 transition-opacity duration-400
+                            flex flex-col justify-end p-4 pointer-events-none">
+              <p className="text-white font-serif text-lg leading-tight">{item.name}</p>
+              <p className="text-white/60 text-sm mt-1">₹{item.price?.toLocaleString('en-IN')}</p>
+            </div>
+          </motion.div>
+        ))}
       </motion.div>
-      
-      {/* Subtle vignette overlay to blend edges */}
-      <div className="absolute inset-0 pointer-events-none z-10" 
-           style={{ boxShadow: 'inset 0 0 200px rgba(5,5,5,0.9)' }} />
 
-      {/* Zoom Controls */}
-      <div className="fixed bottom-8 right-8 z-[90] flex flex-col gap-2 bg-[#111] border border-white/10 rounded-full p-1 shadow-2xl">
-        <button 
-          onClick={handleZoomIn}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <ZoomIn size={18} />
+      {/* Vignette edges */}
+      <div className="absolute inset-0 pointer-events-none z-10"
+           style={{ boxShadow: 'inset 0 0 160px rgba(5,5,5,0.85)' }} />
+
+      {/* Zoom controls */}
+      <div className="fixed bottom-24 right-6 z-[90] flex flex-col gap-1
+                      bg-[#111]/80 border border-white/10 backdrop-blur-md rounded-full p-1 shadow-2xl">
+        <button onClick={handleZoomIn}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white/50
+                           hover:text-white hover:bg-white/10 transition-colors">
+          <ZoomIn size={16} />
         </button>
-        <div className="w-full h-px bg-white/10" />
-        <button 
-          onClick={handleZoomOut}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <ZoomOut size={18} />
+        <div className="h-px bg-white/10 mx-1" />
+        <button onClick={handleZoomOut}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white/50
+                           hover:text-white hover:bg-white/10 transition-colors">
+          <ZoomOut size={16} />
         </button>
       </div>
+
+      {/* Drag hint */}
+      <p className="fixed bottom-8 right-8 text-white/20 text-xs tracking-widest pointer-events-none z-[90]">
+        ✦ DRAG TO EXPLORE
+      </p>
     </div>
   );
 }
