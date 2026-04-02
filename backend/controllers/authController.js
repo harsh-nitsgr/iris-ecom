@@ -157,7 +157,7 @@ const forgotPassword = async (req, res) => {
 
     const html = `
       <div style="font-family: Georgia, serif; max-width: 500px; margin: 0 auto; padding: 40px; background: #0a0a0a; color: #fff;">
-        <h1 style="font-size: 28px; font-weight: 400; letter-spacing: 2px; margin-bottom: 8px;">CHICKENKARI</h1>
+        <h1 style="font-size: 28px; font-weight: 400; letter-spacing: 2px; margin-bottom: 8px;">IRIS</h1>
         <p style="color: #888; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 40px;">Password Reset</p>
         
         <p style="color: #ccc; line-height: 1.7; margin-bottom: 24px;">
@@ -180,7 +180,7 @@ const forgotPassword = async (req, res) => {
     `;
 
     try {
-      await sendEmail({ to: user.email, subject: 'Chickenkari — Password Reset', html });
+      await sendEmail({ to: user.email, subject: 'Iris — Password Reset', html });
       res.json({ message: 'If that email is registered, a reset link has been sent.' });
     } catch (emailError) {
       // If email fails, clear the token so they can try again
