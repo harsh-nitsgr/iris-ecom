@@ -54,24 +54,30 @@ export default function DarkFeatured() {
   const currentProduct = FEATURED[activeIndex];
   const nextProduct = FEATURED[Math.min(activeIndex + 1, FEATURED.length - 1)];
 
-  // ── Clip-path: polygon that starts fully covering and tears from top-right ──
-  // At progress=0: full rectangle (100% coverage)
-  // At progress=1: collapsed to bottom-left corner (fully revealed next slide)
+  // The clip-path sweeps diagonally from top-right to bottom-left:
+  // At p=0: full rectangle visible (0% 0%, 100% 0%, 100% 100%, 0% 100%)
+  // At p=1: collapses to top-right triangle, fully revealing the next slide
+  //
+  // We keep the left & bottom edges pinned so the right & top shrink inward.
   const p = progress;
+  const sweepY = p * 110; // top-right corner drops down (0→110%)
+  const sweepX = (1 - p) * 110; // top-left corner retreats right (110→0%)
 
-  // The "pull" originates at the top-right corner and sweeps diagonally left+down
-  // giving the effect of fabric being grabbed and pulled away.
-  const topRight = `100% 0%`;
-  const topLeft  = `${Math.max(0, 100 - p * 150)}% 0%`;   // top-left sweeps right→0
-  const botLeft  = `0% ${Math.min(100, p * 150)}%`;        // bottom-left sweeps down
-  const botRight = `100% ${Math.min(100, p * 120)}%`;      // bottom-right sweeps down slower
+  // Polygon: top-left, top-right, bottom-right, bottom-left
+  // As p grows, top-left marches right and top-right drops down —
+  // creating the fabric-pulled-from-top-right diagonal tear.
+  const clipPath = `polygon(
+    ${Math.min(sweepX, 100)}% 0%,
+    100% 0%,
+    100% ${Math.min(sweepY, 100)}%,
+    0% 100%,
+    0% ${Math.max(0, 100 - p * 5)}%
+  )`;
 
-  const clipPath = `polygon(${topLeft}, ${topRight}, ${botRight}, ${botLeft})`;
-
-  // Subtle scale/skew on the current slide as it's "stretched"
-  const stretchX = 1 + p * 0.04;
-  const stretchY = 1 + p * 0.02;
-  const skewDeg  = p * -3;
+  // Subtle stretch on current slide as if it's being tugged
+  const stretchX = 1 + p * 0.03;
+  const stretchY = 1 - p * 0.01;
+  const skewDeg  = p * -2;
 
   return (
     <section
