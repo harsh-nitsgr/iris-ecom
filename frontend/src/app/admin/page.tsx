@@ -10,6 +10,7 @@ interface InterestEntry {
   productName: string;
   totalClicks: number;
   updatedAt: string;
+  image?: string;
 }
 
 export default function AdminDashboard() {
@@ -111,17 +112,16 @@ export default function AdminDashboard() {
         ) : (
           <div className="divide-y divide-gray-50">
             {interests.slice(0, 8).map((item, idx) => {
-              const img = getProductImage(item.productId);
               const pct = Math.round((item.totalClicks / maxClicks) * 100);
               return (
-                <div key={item.productId} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition">
+                <Link href={`/product/${item.productId}`} key={item.productId} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition cursor-pointer">
                   {/* Rank */}
                   <span className="w-5 text-xs font-semibold text-gray-300 flex-shrink-0">{idx + 1}</span>
 
                   {/* Product thumb */}
                   <div className="w-10 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                    {img ? (
-                      <img src={img} alt="" className="w-full h-full object-cover"
+                    {item.image ? (
+                      <img src={item.image} alt="" className="w-full h-full object-cover"
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
                       {new Date(item.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                     </p>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
