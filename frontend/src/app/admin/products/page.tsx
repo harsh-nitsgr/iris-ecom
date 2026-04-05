@@ -9,7 +9,7 @@ const ALL_SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 const BLANK = () => ({
   name: '', price: 0, category: 'Dresses',
-  description: '', tag: '', isNew: false,
+  description: '', isTrending: false, isNewArrival: false,
   images: [] as string[], sizes: [] as { size: string; countInStock: number }[],
 });
 
@@ -75,7 +75,7 @@ export default function AdminProductsPage() {
     setEditingId(p._id);
     setForm({
       name: p.name, price: p.price, category: p.category,
-      description: p.description, tag: p.tag || '', isNew: p.isNew || false,
+      description: p.description, isTrending: p.isTrending || false, isNewArrival: p.isNewArrival || false,
       images: p.images || [], sizes: p.sizes || [],
     });
     setShowForm(true);
@@ -186,16 +186,17 @@ export default function AdminProductsPage() {
 
               {/* Tag + New Arrival */}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Tag (optional)</label>
-                  <input type="text" placeholder="New / Bestseller" value={form.tag}
-                    onChange={e => setForm(p => ({ ...p, tag: e.target.value }))}
-                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.isTrending}
+                      onChange={e => setForm(p => ({ ...p, isTrending: e.target.checked }))} />
+                    <span className="text-sm text-gray-700">Trending / Bestseller</span>
+                  </label>
                 </div>
                 <div className="flex items-end pb-2">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={form.isNew}
-                      onChange={e => setForm(p => ({ ...p, isNew: e.target.checked }))} />
+                    <input type="checkbox" checked={form.isNewArrival}
+                      onChange={e => setForm(p => ({ ...p, isNewArrival: e.target.checked }))} />
                     <span className="text-sm text-gray-700">New Arrival</span>
                   </label>
                 </div>
@@ -343,7 +344,10 @@ export default function AdminProductsPage() {
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{p.name}</p>
-                          {p.tag && <span className="text-xs text-gray-400">{p.tag}</span>}
+                          <div className="flex gap-1 mt-1">
+                            {p.isTrending && <span className="text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">Trending</span>}
+                            {p.isNewArrival && <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">New</span>}
+                          </div>
                         </div>
                       </div>
                     </td>
