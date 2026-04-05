@@ -60,7 +60,7 @@ export default function HorizontalProductScroll() {
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 </Link>
                 <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-white/90 backdrop-blur flex justify-center">
-                  <button className="text-xs uppercase tracking-widest font-medium hover:text-gray-500">Add to Cart</button>
+                  <Link href={`/product/${product.id}`} className="text-xs uppercase tracking-widest font-medium hover:text-gray-500">View Piece</Link>
                 </div>
               </div>
               <Link href={`/product/${product.id}`} className="text-lg font-medium text-gray-900 hover:underline line-clamp-1">

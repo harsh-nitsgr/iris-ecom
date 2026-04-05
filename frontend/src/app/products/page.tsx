@@ -11,18 +11,25 @@ function ProductsContent() {
   const searchParams = useSearchParams();
 
   const initialCategory = searchParams.get('category') || 'All';
+  const keyword = searchParams.get('keyword')?.toLowerCase() || '';
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
 
   const allProducts = useProducts();
   const [products, setProducts] = useState(allProducts);
 
   useEffect(() => {
-    if (selectedCategory === 'All') {
-      setProducts(allProducts);
-    } else {
-      setProducts(allProducts.filter(p => p.category === selectedCategory));
+    let filtered = allProducts;
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(p => p.category === selectedCategory);
     }
-  }, [selectedCategory, allProducts]);
+    if (keyword) {
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(keyword) || 
+        (p.description && p.description.toLowerCase().includes(keyword))
+      );
+    }
+    setProducts(filtered);
+  }, [selectedCategory, keyword, allProducts]);
 
   const categories = ['All', 'Dresses', 'Tops', 'Co-ords', 'Party Wear', 'Casual Wear'];
 
@@ -45,7 +52,7 @@ function ProductsContent() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
             <h1 className="text-4xl font-serif text-white tracking-tight">
-              {selectedCategory === 'All' ? 'The Collection' : selectedCategory}
+              {keyword ? `Search: "${searchParams.get('keyword')}"` : (selectedCategory === 'All' ? 'The Collection' : selectedCategory)}
             </h1>
             <p className="text-white/30 text-sm mt-1">{products.length} pieces</p>
           </div>

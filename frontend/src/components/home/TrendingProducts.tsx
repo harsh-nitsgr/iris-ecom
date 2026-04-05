@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Eye } from 'lucide-react';
+import { Heart, Eye } from 'lucide-react';
 
 const DUMMY_PRODUCTS = [
   { id: 1, name: 'Hand-embroidered Linen Dress', price: 4500, image: '/products/prod4.jpg', isNew: true },
@@ -57,9 +57,6 @@ export default function TrendingProducts() {
                 <div className="absolute inset-x-0 bottom-0 bg-white/90 translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex justify-center py-4 space-x-6 backdrop-blur-sm">
                   <button aria-label="Quick View" className="text-gray-900 hover:text-gray-500 transition-colors">
                     <Eye size={20} strokeWidth={1.5} />
-                  </button>
-                  <button aria-label="Add to Cart" className="text-gray-900 hover:text-gray-500 transition-colors">
-                    <ShoppingCart size={20} strokeWidth={1.5} />
                   </button>
                   <button aria-label="Add to Wishlist" className="text-gray-900 hover:text-gray-500 transition-colors">
                     <Heart size={20} strokeWidth={1.5} />
