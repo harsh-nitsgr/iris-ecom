@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Search, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -14,18 +14,30 @@ export default function Header() {
   
   const userMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   const { user, logout } = useAuthStore();
 
+  // Close menus on route change
+  useEffect(() => {
+    setIsUserMenuOpen(false);
+    setIsMenuOpen(false);
+    setShowSearch(false);
+  }, [pathname]);
+
   // Close user dropdown on outside click
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setIsUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
   }, []);
 
   const handleLogout = () => {
