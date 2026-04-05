@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { TrendingUp, Heart } from 'lucide-react';
 import api from '@/lib/api';
 
@@ -9,6 +10,7 @@ interface InterestEntry {
   productName: string;
   totalClicks: number;
   updatedAt: string;
+  image?: string;
 }
 
 export default function AdminInterestsPage() {
@@ -57,10 +59,15 @@ export default function AdminInterestsPage() {
                   <tr key={item.productId} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4 text-gray-400 font-medium">{idx + 1}</td>
                     <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-900">{item.productName}</p>
-                        <p className="text-xs text-gray-400 font-mono">{item.productId}</p>
-                      </div>
+                      <Link href={`/product/${item.productId}`} className="flex items-center gap-3 hover:opacity-80 transition">
+                        <div className="w-10 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                          {item.image && <img src={item.image} alt={item.productName} className="w-full h-full object-cover" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 line-clamp-1">{item.productName}</p>
+                          <p className="text-xs text-blue-500 hover:underline font-mono mt-0.5">View details &rarr;</p>
+                        </div>
+                      </Link>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">

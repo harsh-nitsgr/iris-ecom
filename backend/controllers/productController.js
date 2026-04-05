@@ -1,5 +1,7 @@
 const Product = require('../models/Product');
 const Brand   = require('../models/Brand'); // must be imported so Mongoose registers the schema before .populate('brand')
+const User    = require('../models/User');
+
 
 // @desc    Fetch all products
 // @route   GET /api/products
@@ -68,15 +70,32 @@ const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
+    const { name, price, category, description, images, sizes, isTrending, isNewArrival } = req.body;
+
+    // Resolve brand: find existing 'Iris' brand or the first brand in DB
+    let brandDoc = await Brand.findOne({ name: 'Iris' }) || await Brand.findOne();
+    if (!brandDoc) {
+      brandDoc = await Brand.create({
+        name: 'Iris',
+        description: 'Iris — Western fashion with Indian craft soul',
+        logo: { url: 'https://via.placeholder.com/100', public_id: 'iris_logo' },
+      });
+    }
+
+    // Admin user: use req.user if authenticated, else fall back to any admin
+    const userId = req.user?._id || (await User.findOne({ role: 'admin' }))?._id;
+
     const product = new Product({
-      name: 'Sample name',
-      price: 0,
-      user: req.user._id,
-      images: [],
-      brand: req.body.brand || null, // Needs a valid brand ID ideally
-      category: 'Dresses',
-      sizes: [],
-      description: 'Sample description',
+      name: name || 'New Product',
+      price: price || 0,
+      user: userId,
+      images: images || [],
+      brand: brandDoc._id,
+      category: category || 'Dresses',
+      sizes: sizes || [],
+      description: description || '',
+      isTrending: isTrending || false,
+      isNewArrival: isNewArrival || false,
     });
 
     const createdProduct = await product.save();
@@ -90,21 +109,21 @@ const createProduct = async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
-  const { name, price, description, images, brand, category, sizes, isTrending, isNewArrival } = req.body;
+  const { name, price, description, images, category, sizes, isTrending, isNewArrival } = req.body;
+  // Note: we intentionally ignore req.body.brand (it's always 'Iris' — resolved from DB)
 
   try {
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      product.name = name || product.name;
-      product.price = price || product.price;
-      product.description = description || product.description;
-      product.images = images || product.images;
-      product.brand = brand || product.brand;
-      product.category = category || product.category;
-      product.sizes = sizes || product.sizes;
-      product.isTrending = isTrending !== undefined ? isTrending : product.isTrending;
-      product.isNewArrival = isNewArrival !== undefined ? isNewArrival : product.isNewArrival;
+      product.name        = name        !== undefined ? name        : product.name;
+      product.price       = price       !== undefined ? price       : product.price;
+      product.description = description !== undefined ? description : product.description;
+      product.images      = images      !== undefined ? images      : product.images;
+      product.category    = category    !== undefined ? category    : product.category;
+      product.sizes       = sizes       !== undefined ? sizes       : product.sizes;
+      product.isTrending    = isTrending    !== undefined ? isTrending    : product.isTrending;
+      product.isNewArrival  = isNewArrival  !== undefined ? isNewArrival  : product.isNewArrival;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);

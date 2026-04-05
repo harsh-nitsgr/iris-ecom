@@ -39,7 +39,7 @@ function ProductsContent() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] pt-24 pb-32">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-5xl mx-auto px-8 sm:px-16 md:px-20 lg:px-24 py-12">
 
         {/* Page header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">

@@ -55,10 +55,36 @@ const getProductInterest = async (req, res) => {
 // @access  Private/Admin
 const getAllInterests = async (req, res) => {
   try {
-    const interests = await ProductInterest
-      .find({})
-      .sort({ totalClicks: -1 })
-      .select('productId productName totalClicks updatedAt');
+    const interests = await ProductInterest.aggregate([
+      {
+        $addFields: {
+          productObjectId: {
+            $convert: { input: "$productId", to: "objectId", onError: null, onNull: null }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "productObjectId",
+          foreignField: "_id",
+          as: "productDetails"
+        }
+      },
+      {
+        $unwind: { path: "$productDetails", preserveNullAndEmptyArrays: true }
+      },
+      {
+        $project: {
+          productId: 1,
+          productName: 1,
+          totalClicks: 1,
+          updatedAt: 1,
+          image: { $arrayElemAt: ["$productDetails.images", 0] }
+        }
+      },
+      { $sort: { totalClicks: -1 } }
+    ]);
     res.json(interests);
   } catch (error) {
     res.status(500).json({ message: error.message });
