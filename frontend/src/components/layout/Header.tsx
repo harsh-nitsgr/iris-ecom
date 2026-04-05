@@ -118,34 +118,36 @@ export default function Header() {
                     </span>
                   </button>
 
-                  <div className="absolute right-0 mt-3 w-52 bg-[#111] border border-white/10 shadow-2xl py-2 z-50">
-                    <div className="px-4 py-3 border-b border-white/10">
-                      <p className="text-white text-sm font-medium truncate">{user.name}</p>
-                      <p className="text-white/40 text-xs truncate">{user.email}</p>
-                    </div>
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsUserMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm"
-                    >
-                      <User size={15} strokeWidth={1.5} /> My Account
-                    </Link>
-                    {user.role === 'admin' && (
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-3 w-52 bg-[#111] border border-white/10 shadow-2xl py-2 z-50">
+                      <div className="px-4 py-3 border-b border-white/10">
+                        <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                        <p className="text-white/40 text-xs truncate">{user.email}</p>
+                      </div>
                       <Link
-                        href="/admin"
+                        href="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm"
                       >
-                        <LayoutDashboard size={15} strokeWidth={1.5} /> Admin Panel
+                        <User size={15} strokeWidth={1.5} /> My Account
                       </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-3 w-full text-left px-4 py-3 text-red-400/80 hover:text-red-400 hover:bg-white/5 transition-colors text-sm border-t border-white/10 mt-1"
-                    >
-                      <LogOut size={15} strokeWidth={1.5} /> Sign Out
-                    </button>
-                  </div>
+                      {user.role === 'admin' && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-white/70 hover:text-white hover:bg-white/5 transition-colors text-sm"
+                        >
+                          <LayoutDashboard size={15} strokeWidth={1.5} /> Admin Panel
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full text-left px-4 py-3 text-red-400/80 hover:text-red-400 hover:bg-white/5 transition-colors text-sm border-t border-white/10 mt-1"
+                      >
+                        <LogOut size={15} strokeWidth={1.5} /> Sign Out
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link href="/login" className="text-white/80 hover:text-white transition" aria-label="Sign in">
