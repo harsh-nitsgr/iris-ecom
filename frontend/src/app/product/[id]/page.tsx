@@ -195,8 +195,8 @@ export default function ProductDetailPage() {
             {/* Accordion */}
             <div className="border-t border-white/10 pt-8 space-y-0 mt-auto">
               {[
-                { label: 'Fabric & Care', text: 'Handwoven natural fabric. Dry clean recommended. Store folded in a cool, dry place.' },
-                { label: 'Shipping & Returns', text: 'Free standard shipping on orders over ₹5000. Express delivery available. Returns accepted within 14 days of delivery in original condition.' },
+                { label: 'Fabric & Care', text: product.fabricAndCare || 'Handwoven natural fabric. Dry clean recommended. Store folded in a cool, dry place.' },
+                { label: 'Shipping & Returns', text: product.shippingAndReturns || 'Free standard shipping on orders over ₹5000. Express delivery available. Returns accepted within 14 days of delivery in original condition.' },
               ].map(({ label, text }) => (
                 <details key={label} className="group border-b border-white/10">
                   <summary className="flex justify-between items-center py-4 cursor-pointer list-none text-xs tracking-widest uppercase text-white/60 hover:text-white transition-colors">

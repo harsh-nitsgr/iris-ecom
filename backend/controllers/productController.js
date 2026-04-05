@@ -70,7 +70,7 @@ const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    const { name, price, category, description, images, sizes, isTrending, isNewArrival } = req.body;
+    const { name, price, category, description, images, sizes, isTrending, isNewArrival, fabricAndCare, shippingAndReturns } = req.body;
 
     // Resolve brand: find existing 'Iris' brand or the first brand in DB
     let brandDoc = await Brand.findOne({ name: 'Iris' }) || await Brand.findOne();
@@ -96,6 +96,8 @@ const createProduct = async (req, res) => {
       description: description || '',
       isTrending: isTrending || false,
       isNewArrival: isNewArrival || false,
+      fabricAndCare: fabricAndCare || '',
+      shippingAndReturns: shippingAndReturns || '',
     });
 
     const createdProduct = await product.save();
@@ -109,7 +111,7 @@ const createProduct = async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
-  const { name, price, description, images, category, sizes, isTrending, isNewArrival } = req.body;
+  const { name, price, description, images, category, sizes, isTrending, isNewArrival, fabricAndCare, shippingAndReturns } = req.body;
   // Note: we intentionally ignore req.body.brand (it's always 'Iris' — resolved from DB)
 
   try {
@@ -124,6 +126,8 @@ const updateProduct = async (req, res) => {
       product.sizes       = sizes       !== undefined ? sizes       : product.sizes;
       product.isTrending    = isTrending    !== undefined ? isTrending    : product.isTrending;
       product.isNewArrival  = isNewArrival  !== undefined ? isNewArrival  : product.isNewArrival;
+      product.fabricAndCare      = fabricAndCare      !== undefined ? fabricAndCare      : product.fabricAndCare;
+      product.shippingAndReturns = shippingAndReturns !== undefined ? shippingAndReturns : product.shippingAndReturns;
 
       const updatedProduct = await product.save();
       res.json(updatedProduct);

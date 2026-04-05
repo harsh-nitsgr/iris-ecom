@@ -43,6 +43,14 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    fabricAndCare: {
+      type: String,
+      default: '',
+    },
+    shippingAndReturns: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,

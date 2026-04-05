@@ -10,6 +10,7 @@ const ALL_SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const BLANK = () => ({
   name: '', price: 0, category: 'Dresses',
   description: '', isTrending: false, isNewArrival: false,
+  fabricAndCare: '', shippingAndReturns: '',
   images: [] as string[], sizes: [] as { size: string; countInStock: number }[],
 });
 
@@ -76,6 +77,7 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name, price: p.price, category: p.category,
       description: p.description, isTrending: p.isTrending || false, isNewArrival: p.isNewArrival || false,
+      fabricAndCare: p.fabricAndCare || '', shippingAndReturns: p.shippingAndReturns || '',
       images: p.images || [], sizes: p.sizes || [],
     });
     setShowForm(true);
@@ -182,6 +184,22 @@ export default function AdminProductsPage() {
                 <textarea required rows={4} value={form.description}
                   onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                   className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none" />
+              </div>
+
+              {/* Accordion Specific Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Fabric & Care</label>
+                  <textarea rows={3} value={form.fabricAndCare} placeholder="e.g. 100% Cotton. Dry clean only."
+                    onChange={e => setForm(p => ({ ...p, fabricAndCare: e.target.value }))}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Shipping & Returns</label>
+                  <textarea rows={3} value={form.shippingAndReturns} placeholder="e.g. Ships in 2-3 days."
+                    onChange={e => setForm(p => ({ ...p, shippingAndReturns: e.target.value }))}
+                    className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none" />
+                </div>
               </div>
 
               {/* Tag + New Arrival */}
