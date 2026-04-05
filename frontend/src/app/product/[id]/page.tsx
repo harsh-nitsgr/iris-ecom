@@ -14,7 +14,12 @@ export default function ProductDetailPage() {
   const productId = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : '';
   
   const allProducts = useProducts();
-  const product = allProducts.find(p => p._id === productId) ?? allProducts[0];
+  // Find by ID — wait for products to load (API is async)
+  const product = allProducts.find(p => p._id === productId);
+
+  // Resolve image URL — handles both plain strings and legacy {url} objects
+  const resolveImg = (img: any): string =>
+    typeof img === 'string' ? img : (img?.url ?? '');
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -56,6 +61,21 @@ export default function ProductDetailPage() {
     }
   };
 
+  // Show loading skeleton while products are being fetched from API
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/30 text-xs tracking-widest uppercase">Loading product…</p>
+        </div>
+      </div>
+    );
+  }
+
+  const images = (product.images || []).map(resolveImg).filter(Boolean);
+  const brandName = typeof product.brand === 'object' ? (product.brand?.name ?? 'Iris') : (product.brand ?? 'Iris');
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20">
@@ -69,7 +89,7 @@ export default function ProductDetailPage() {
             className="flex flex-col-reverse lg:flex-row gap-4">
             {/* Thumbnails */}
             <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:h-[640px] scrollbar-hide">
-              {product.images.map((img, idx) => (
+              {images.map((img, idx) => (
                 <button key={idx} onClick={() => setSelectedImage(idx)}
                   className={`flex-shrink-0 w-20 h-24 lg:w-24 lg:h-32 border-2 overflow-hidden transition-colors ${selectedImage === idx ? 'border-white' : 'border-white/10 hover:border-white/30'}`}>
                   <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
@@ -81,14 +101,14 @@ export default function ProductDetailPage() {
               {product.tag && (
                 <span className="absolute top-4 left-4 z-10 text-[10px] tracking-widest uppercase bg-white text-black px-3 py-1">{product.tag}</span>
               )}
-              <img src={product.images[selectedImage]} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 origin-center" />
+              <img src={images[selectedImage] || images[0]} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 origin-center" />
             </div>
           </motion.div>
 
           {/* Details */}
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
             className="flex flex-col">
-            <span className="text-white/30 text-xs tracking-[0.4em] uppercase mb-3">{product.brand.name}</span>
+            <span className="text-white/30 text-xs tracking-[0.4em] uppercase mb-3">{brandName}</span>
             <h1 className="text-3xl md:text-4xl font-serif text-white mb-2">{product.name}</h1>
             <span className="text-white/50 text-xs tracking-widest uppercase mb-6">{product.category}</span>
             <span className="text-2xl text-white mb-8 font-light">₹{product.price.toLocaleString('en-IN')}</span>
