@@ -10,7 +10,7 @@ const ALL_SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const BLANK = () => ({
   name: '', price: 0, category: 'Dresses',
   description: '', tag: '', isNew: false,
-  brand: { name: 'Iris' }, images: [] as string[], sizes: [] as { size: string; countInStock: number }[],
+  images: [] as string[], sizes: [] as { size: string; countInStock: number }[],
 });
 
 export default function AdminProductsPage() {
@@ -76,7 +76,6 @@ export default function AdminProductsPage() {
     setForm({
       name: p.name, price: p.price, category: p.category,
       description: p.description, tag: p.tag || '', isNew: p.isNew || false,
-      brand: p.brand || { name: 'Iris' },
       images: p.images || [], sizes: p.sizes || [],
     });
     setShowForm(true);
@@ -99,10 +98,12 @@ export default function AdminProductsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true);
     try {
+      // Strip 'brand' from payload — backend resolves it to ObjectId automatically
+      const { ...payload } = form;
       if (editingId) {
-        await api.put(`/products/${editingId}`, form);
+        await api.put(`/products/${editingId}`, payload);
       } else {
-        await api.post('/products', form);
+        await api.post('/products', payload);
       }
       await fetchProducts();
       setShowForm(false);
