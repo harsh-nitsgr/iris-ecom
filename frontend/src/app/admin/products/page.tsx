@@ -30,9 +30,11 @@ export default function AdminProductsPage() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/products');
-      setProducts(data);
-    } catch { console.error('Failed to load products'); }
+      // Backend returns paginated { products, page, pages } — fetch all with a large limit
+      const { data } = await api.get('/products?pageNumber=1&limit=200');
+      // Support both paginated response and plain array fallback
+      setProducts(Array.isArray(data) ? data : (data.products ?? []));
+    } catch (e) { console.error('Failed to load products', e); }
     finally { setLoading(false); }
   }, []);
 

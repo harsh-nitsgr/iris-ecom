@@ -5,22 +5,13 @@ const Product = require('../models/Product');
 // @access  Public
 const getProducts = async (req, res) => {
   try {
-    const pageSize = 12;
+    const pageSize = Number(req.query.limit) || Number(req.query.pageSize) || 12;
     const page = Number(req.query.pageNumber) || 1;
 
-    // Filters
     const keyword = req.query.keyword
-      ? {
-          name: {
-            $regex: req.query.keyword,
-            $options: 'i',
-          },
-        }
+      ? { name: { $regex: req.query.keyword, $options: 'i' } }
       : {};
-
     const category = req.query.category ? { category: req.query.category } : {};
-    
-    // Combine filters
     const filter = { ...keyword, ...category };
 
     const count = await Product.countDocuments(filter);
