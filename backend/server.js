@@ -9,6 +9,13 @@ dotenv.config();
 // Connect to database
 connectDB();
 
+// Pre-register all Mongoose models to avoid "Schema not registered" errors during populate()
+require('./models/Brand');
+require('./models/Product');
+require('./models/User');
+require('./models/Order');
+require('./models/Cart');
+
 const app = express();
 
 // Route files

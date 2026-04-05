@@ -4,7 +4,6 @@ const productSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: 'User',
     },
     name: {
@@ -14,7 +13,6 @@ const productSchema = new mongoose.Schema(
     brand: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Brand',
-      required: true,
     },
     category: {
       type: String,
@@ -30,12 +28,7 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Please add a price'],
       default: 0,
     },
-    images: [
-      {
-        url: { type: String, required: true },
-        public_id: { type: String, required: true },
-      },
-    ],
+    images: [{ type: String }],
     sizes: [
       {
         size: { type: String, required: true },
