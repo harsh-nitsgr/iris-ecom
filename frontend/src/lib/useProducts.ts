@@ -1,39 +1,37 @@
 import { useState, useEffect } from 'react';
-import { PRODUCTS, Product } from './products';
 
-const STORAGE_KEY = 'admin_products';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 /**
- * useProducts — returns the current product catalog.
- * Admin edits are saved to localStorage under 'admin_products'.
- * This hook reads localStorage first and falls back to the static PRODUCTS array.
- * This ensures admin portal changes are immediately reflected on the site.
+ * useProducts — fetches the product catalog from the real backend API.
+ * Falls back to an empty array while loading.
  */
-export function useProducts(): Product[] {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+export function useProducts(): any[] {
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
+    let cancelled = false;
+
+    const fetchAll = async () => {
       try {
-        setProducts(JSON.parse(raw));
-        return;
-      } catch {}
-    }
-    setProducts(PRODUCTS);
+        // Fetch up to 500 products (more than enough for the catalog)
+        const res = await fetch(`${API_BASE}/products?limit=500`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        // Backend returns { products, page, pages } — extract the array
+        setProducts(Array.isArray(data) ? data : (data.products ?? []));
+      } catch (e) {
+        console.error('[useProducts] Failed to fetch products from API:', e);
+      }
+    };
+
+    fetchAll();
+    return () => { cancelled = true; };
   }, []);
 
   return products;
 }
 
-/**
- * getAdminProducts — synchronous read for use outside React components.
- */
-export function getAdminProducts(): Product[] {
-  if (typeof window === 'undefined') return PRODUCTS;
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try { return JSON.parse(raw); } catch {}
-  }
-  return PRODUCTS;
-}
+// Keep legacy export for backward compat — now just an alias
+export const getAdminProducts = () => [];

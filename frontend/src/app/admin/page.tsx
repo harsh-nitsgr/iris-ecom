@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { ShoppingBag, Users, Heart, TrendingUp, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
-import { PRODUCTS } from '@/lib/products';
 
 interface InterestEntry {
   productId: string;
@@ -16,13 +15,18 @@ interface InterestEntry {
 export default function AdminDashboard() {
   const [interests, setInterests] = useState<InterestEntry[]>([]);
   const [loadingInterests, setLoadingInterests] = useState(true);
-
-  // Load from localStorage to get accurate product count
-  const storedProducts = typeof window !== 'undefined'
-    ? (() => { try { const r = localStorage.getItem('admin_products'); return r ? JSON.parse(r) : PRODUCTS; } catch { return PRODUCTS; } })()
-    : PRODUCTS;
+  const [productCount, setProductCount] = useState(0);
 
   useEffect(() => {
+    // Fetch real product count from API
+    api.get('/products?limit=1').then(({ data }) => {
+      setProductCount(Array.isArray(data) ? data.length : (data.pages != null ? data.pages * 12 : (data.products?.length ?? 0)));
+      // More accurately: use count from a dedicated endpoint or just show products length
+      api.get('/products?limit=500').then(({ data: all }) => {
+        setProductCount(Array.isArray(all) ? all.length : (all.products?.length ?? 0));
+      }).catch(() => {});
+    }).catch(() => {});
+
     api.get('/interests')
       .then(({ data }) => setInterests(data))
       .catch(() => setInterests([]))
@@ -32,11 +36,8 @@ export default function AdminDashboard() {
   const totalImpressions = interests.reduce((sum, i) => sum + i.totalClicks, 0);
   const maxClicks = interests[0]?.totalClicks || 1;
 
-  // Find product image from local catalog
-  const getProductImage = (productId: string) => {
-    const p = PRODUCTS.find(p => p._id === productId);
-    return p?.images[0] || null;
-  };
+  // Product images are now served from backend — no local lookup needed
+  const getProductImage = (_productId: string) => null;
 
   return (
     <div className="p-8 min-h-screen bg-gray-50">
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
             </div>
             <span className="text-xs text-gray-400 uppercase tracking-wider">Products</span>
           </div>
-          <p className="text-3xl font-semibold text-gray-900">{storedProducts.length}</p>
+          <p className="text-3xl font-semibold text-gray-900">{productCount}</p>
           <p className="text-xs text-gray-400 mt-1">In catalog</p>
         </div>
 

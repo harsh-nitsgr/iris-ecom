@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const Brand   = require('../models/Brand'); // must be imported so Mongoose registers the schema before .populate('brand')
 
 // @desc    Fetch all products
 // @route   GET /api/products
